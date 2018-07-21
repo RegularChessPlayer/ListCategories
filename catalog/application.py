@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
@@ -13,7 +13,6 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-@app.route('/')
 @app.route('/category/<int:category_id>')
 def menu(category_id):
     category = session.query(Category).filter_by(id=category_id).one()
@@ -21,9 +20,17 @@ def menu(category_id):
     return render_template('menu.html', category=category, items=items)
 
 
-@app.route('/category/<int:category_id>/new')
+@app.route('/categoryItem/<int:category_id>/new', methods=['GET', 'POST'])
 def newCategoryItem(category_id):
-    return "Page to create a new menu category."
+    if request.method == 'POST':
+        newCategoryItem = CategoryItem(name=request.form['name'],
+                                       description=request.form['description'],
+                                       category_id=category_id)
+        session.add(newCategoryItem)
+        session.commit()
+        return redirect(url_for('menu', category_id=category_id))
+    else:
+        return render_template('newcategoryitem.html', category_id=category_id)
 
 
 @app.route('/category/<int:category_id>/<int:category_item_id>/edit')
