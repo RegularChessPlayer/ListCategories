@@ -1,4 +1,7 @@
 <html>
+    <head>
+        <link rel=stylesheet type=text/css href="{{url_for('static', filename='styles.css')}}">
+    </head>
     <body>   
         <h1>{{ category.name }} </h1>
         <a href="{{url_for('newCategoryItem', category_name=category.name)}}"> Add Item </a>
@@ -10,7 +13,7 @@
         </br>
         <a href="{{url_for('editCategoryItem', category_name=i.category.name,
                              category_item_name=i.name)}}">Edit</a>, 
-        <a href={{url_for('deleteMenuItem', category_name=i.category.name, category_item_name=i.name)}}>Delete</a>
+        <a href={{url_for('deleteCategoryItem', category_name=i.category.name, category_item_name=i.name)}}>Delete</a>
         </br>
         {% endfor %}
     </body>

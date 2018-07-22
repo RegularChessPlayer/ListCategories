@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
@@ -13,9 +13,17 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
+@app.route('/category/<string:category_name>/json')
+def menuItemJson(category_name):
+    category = session.query(Category).filter_by(name=category_name).one()
+    items = session.query(CategoryItem).filter_by(category_id=category.id)
+    return jsonify(Items=[i.serialize for i in items])
+
+
+@app.route('/', defaults={'category_name': None})
 @app.route('/category/<string:category_name>')
 def menu(category_name):
-    if(not category_name.strip()):
+    if(not category_name):
         return "Hello all categories"
     else:
         category = session.query(Category).filter_by(name=category_name).one()
@@ -60,8 +68,20 @@ def editCategoryItem(category_name, category_item_name):
 
 @app.route('/category/<string:category_name>/<string:category_item_name>'
            '/delete', methods=['GET', 'POST'])
-def deleteMenuItem(category_name, category_item_name):
-    return "Page to delete menu item."
+def deleteCategoryItem(category_name, category_item_name):
+    if request.method == 'POST':
+        print(category_item_name)
+        category = session.query(Category).filter_by(name=category_name).one()
+        categoryItem = session.query(CategoryItem).filter_by(
+                                                category_id=category.id,
+                                                name=category_item_name).one()
+        session.delete(categoryItem)
+        session.commit()
+        return redirect(url_for('menu', category_name=category_name))
+    else:
+        return render_template('deletecategoryitem.html',
+                               category_name=category_name,
+                               category_item_name=category_item_name)
 
 
 if __name__ == '__main__':
