@@ -2,7 +2,13 @@
     <head>
         <link rel=stylesheet type=text/css href="{{url_for('static', filename='styles.css')}}">
     </head>
-    <body>   
+    <body>
+        <header>
+            <div class="header-inner">
+                <h1> Catalog App</h1> 
+                <p>Logout</p>
+            </div>
+        </header>     
         <h1>{{ category.name }} </h1>
         <a href="{{url_for('newCategoryItem', category_name=category.name)}}"> Add Item </a>
         </br>
