@@ -6,7 +6,11 @@
         <header>
             <div class="header-inner">
                 <h1> Catalog App</h1> 
-                <p>Logout</p>
+                {%if 'username'in session%}
+                    <a href='{{url_for('gdisconnect')}}'>Login</a>
+                {%else%}
+                    <a href='{{url_for('showLogin')}}'> Logout</a>
+                {% endif %}
             </div>
         </header>     
         <h1>{{ category.name }} </h1>
