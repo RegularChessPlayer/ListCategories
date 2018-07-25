@@ -1,11 +1,8 @@
 <html>
-    <body>
-        <header>
-            <div class="header-inner">
-                <h1> Catalog App</h1> 
-                <p>Logout</p>
-            </div>
-        </header>   
+    <head>
+        <link rel=stylesheet type=text/css href="{{url_for('static', filename='styles.css')}}">
+    </head>
+    <body>  
         <main>
             <div class="main-description">
                 <h1>Are you sure delete {{category_item_name}} from {{category_name}} ?</h1>

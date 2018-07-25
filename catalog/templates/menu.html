@@ -2,29 +2,27 @@
     <head>
         <link rel=stylesheet type=text/css href="{{url_for('static', filename='styles.css')}}">
     </head>
-    <body>
-        <header>
-            <div class="header-inner">
-                <h1> Catalog App</h1> 
-                {%if 'username'in session%}
-                    <a href='{{url_for('gdisconnect')}}'>Login</a>
-                {%else%}
-                    <a href='{{url_for('showLogin')}}'> Logout</a>
-                {% endif %}
-            </div>
-        </header>     
+    <body>   
         <h1>{{ category.name }} </h1>
+        {%if 'username' not in session %}                    
         <a href="{{url_for('newCategoryItem', category_name=category.name)}}"> Add Item </a>
+        {% endif %}
         </br>
+        <h2>Items</h2>
+        <ul>
         {% for i in items %}
-        {{i.name}}
-        </br>
-        {{i.description}}
-        </br>
-        <a href="{{url_for('editCategoryItem', category_name=i.category.name,
-                             category_item_name=i.name)}}">Edit</a>, 
-        <a href={{url_for('deleteCategoryItem', category_name=i.category.name, category_item_name=i.name)}}>Delete</a>
-        </br>
+        <li>
+            {{i.name}}
+            ({{i.description}})
+        </li>
+        </ul>
+        {%if 'username' not in session %}                    
+            <a href="{{url_for('editCategoryItem', category_name=i.category.name,
+            category_item_name=i.name)}}">Edit</a>, 
+            <a href={{url_for('deleteCategoryItem', category_name=i.category.name, category_item_name=i.name)}}>Delete</a>
+            </br>
+        {% endif %}
         {% endfor %}
+        <a href={{url_for('allCategories')}}>Back</a>
     </body>
 </html>

@@ -58,16 +58,8 @@ a {
     float: left;
 }
 
-.description {}
-
 .price {
     text-align: right;
     width: 50%;
     float: right;
-}
-
-.editdeletepane {}
-
-.flash {
-    background: #cee5f5;
 }
