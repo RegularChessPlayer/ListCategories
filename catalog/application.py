@@ -144,7 +144,8 @@ def gdisconnect():
         response = make_response(json.dumps(
             'Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
-    return response
+        login_session.clear()
+        return redirect(url_for('allCategories'))
 
 
 def createUser(login_session):
@@ -219,7 +220,7 @@ def editCategoryItem(category_name, category_item_name):
         category_id=category.id,
         name=category_item_name).one()
     if categoryItem.user_id != login_session['user_id']:
-        return "< script > function myFunction() {alert('You not authorized');'< /script > <body onload = myFunction()"" >"
+        return "<script>function myFunction() {alert('You are not authorized!')}</script><body onload='myFunction()'>"  # noqa
     if request.method == 'POST':
         categoryItem.name = request.form['name']
         categoryItem.description = request.form['description']
@@ -238,12 +239,14 @@ def editCategoryItem(category_name, category_item_name):
 def deleteCategoryItem(category_name, category_item_name):
     if 'username' not in login_session:
         return redirect('/login')
+    category = session.query(Category).filter_by(name=category_name).one()
+    categoryItem = session.query(CategoryItem).filter_by(
+        category_id=category.id,
+        name=category_item_name).one()
+    if categoryItem.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized!')}</script><body onload='myFunction()'>"  # noqa
     if request.method == 'POST':
         print(category_item_name)
-        category = session.query(Category).filter_by(name=category_name).one()
-        categoryItem = session.query(CategoryItem).filter_by(
-            category_id=category.id,
-            name=category_item_name).one()
         session.delete(categoryItem)
         session.commit()
         return redirect(url_for('menu', category_name=category_name))

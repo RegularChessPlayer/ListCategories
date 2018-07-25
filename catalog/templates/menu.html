@@ -4,7 +4,7 @@
     </head>
     <body>   
         <h1>{{ category.name }} </h1>
-        {%if 'username' not in session %}                    
+        {%if 'username'in session %}                    
         <a href="{{url_for('newCategoryItem', category_name=category.name)}}"> Add Item </a>
         {% endif %}
         </br>
@@ -12,11 +12,11 @@
         <ul>
         {% for i in items %}
         <li>
-            {{i.name}}
-            ({{i.description}})
+        {{i.name}}
+        ({{i.description}})
         </li>
         </ul>
-        {%if 'username' not in session %}                    
+        {%if 'username' in session %}                    
             <a href="{{url_for('editCategoryItem', category_name=i.category.name,
             category_item_name=i.name)}}">Edit</a>, 
             <a href={{url_for('deleteCategoryItem', category_name=i.category.name, category_item_name=i.name)}}>Delete</a>
