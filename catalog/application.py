@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Category, CategoryItem
+from database_setup import Base, Category, CategoryItem, User
 from flask import session as login_session, make_response
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
@@ -100,6 +100,10 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
+    user_id = getUserID(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -143,6 +147,28 @@ def gdisconnect():
     return response
 
 
+def createUser(login_session):
+    newUser = User(name=login_session['username'], email=login_session[
+                   'email'], picture=login_session['picture'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def getUserID(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
+
+
 @app.route('/category/<string:category_name>/json')
 def menuItemJson(category_name):
     category = session.query(Category).filter_by(name=category_name).one()
@@ -160,12 +186,9 @@ def allCategories():
 
 @app.route('/category/<string:category_name>')
 def menu(category_name):
-    if(not category_name):
-        return "Hello all categories"
-    else:
-        category = session.query(Category).filter_by(name=category_name).one()
-        items = session.query(CategoryItem).filter_by(category_id=category.id)
-        return render_template('menu.html', category=category, items=items)
+    category = session.query(Category).filter_by(name=category_name).one()
+    items = session.query(CategoryItem).filter_by(category_id=category.id)
+    return render_template('menu.html', category=category, items=items)
 
 
 @app.route('/categoryItem/<string:category_name>/new', methods=['GET', 'POST'])
@@ -176,7 +199,8 @@ def newCategoryItem(category_name):
         category = session.query(Category).filter_by(name=category_name).one()
         newCategoryItem = CategoryItem(name=request.form['name'],
                                        description=request.form['description'],
-                                       category_id=category.id)
+                                       category_id=category.id,
+                                       user_id=login_session['user_id'])
         session.add(newCategoryItem)
         session.commit()
         return redirect(url_for('menu', category_name=category_name))
@@ -194,6 +218,8 @@ def editCategoryItem(category_name, category_item_name):
     categoryItem = session.query(CategoryItem).filter_by(
         category_id=category.id,
         name=category_item_name).one()
+    if categoryItem.user_id != login_session['user_id']:
+        return "< script > function myFunction() {alert('You not authorized');'< /script > <body onload = myFunction()"" >"
     if request.method == 'POST':
         categoryItem.name = request.form['name']
         categoryItem.description = request.form['description']
