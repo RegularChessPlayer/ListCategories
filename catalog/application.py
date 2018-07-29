@@ -24,6 +24,7 @@ def showLogin():
     return render_template('login.html', STATE=state)
 
 
+# Log in using Google API
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
@@ -91,6 +92,7 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
+    # see if user exists, if it doesn't make a new one
     user_id = getUserID(login_session['email'])
     if not user_id:
         user_id = createUser(login_session)
@@ -106,6 +108,7 @@ def gconnect():
     return output
 
 
+# To log out user
 @app.route('/gdisconnect')
 def gdisconnect():
     access_token = login_session.get('access_token')
@@ -139,6 +142,7 @@ def gdisconnect():
         return redirect(url_for('allCategories'))
 
 
+# To create a new user
 def createUser(login_session):
     crud.createUser(name=login_session['username'],
                     email=login_session['email'],
@@ -147,11 +151,13 @@ def createUser(login_session):
     return user.id
 
 
+# To get user by ID
 def getUserInfo(user_id):
     user = crud.findUserId(user_id)
     return user
 
 
+# To get user by Email
 def getUserID(email):
     try:
         user = crud.findUserEmail(email)
@@ -160,6 +166,7 @@ def getUserID(email):
         return None
 
 
+# JSON APIs to show Catalog information
 @app.route('/category/<string:category_name>/json')
 def menuItemJson(category_name):
     category = crud.findCategoryName(category_name)
@@ -167,6 +174,7 @@ def menuItemJson(category_name):
     return jsonify(Items=[i.serialize for i in items])
 
 
+# READ - home page, show latest items and categories
 @app.route('/')
 def allCategories():
     categories = crud.findAllCategory()
@@ -175,6 +183,7 @@ def allCategories():
                            categories=categories, items=items)
 
 
+# LIST all items for a especific Category Item
 @app.route('/category/<string:category_name>')
 def menu(category_name):
     category = crud.findCategoryName(category_name)
@@ -182,6 +191,7 @@ def menu(category_name):
     return render_template('menu.html', category=category, items=items)
 
 
+# READ a especific Category Item
 @app.route('/category/<string:category_name>/<string:category_item_name>')
 def menuCategoryItem(category_name, category_item_name):
     category = crud.findCategoryName(category_name)
@@ -192,6 +202,7 @@ def menuCategoryItem(category_name, category_item_name):
                            item=item)
 
 
+# ADD a Category Item
 @app.route('/categoryItem/<string:category_name>/new', methods=['GET', 'POST'])
 def newCategoryItem(category_name):
     if 'username' not in login_session:
@@ -206,6 +217,7 @@ def newCategoryItem(category_name):
                                category_name=category_name)
 
 
+# EDIT a Category Item
 @app.route('/category/<string:category_name>/<string:category_item_name>/edit',
            methods=['GET', 'POST'])
 def editCategoryItem(category_name, category_item_name):
@@ -226,6 +238,7 @@ def editCategoryItem(category_name, category_item_name):
                                item=categoryItem)
 
 
+# DELETE a Category Item
 @app.route('/category/<string:category_name>/<string:category_item_name>'
            '/delete', methods=['GET', 'POST'])
 def deleteCategoryItem(category_name, category_item_name):
