@@ -1,11 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Category, CategoryItem, User
 from flask import session as login_session, make_response
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
+import crud
 import random
 import string
 import httplib2
@@ -15,12 +12,6 @@ import requests
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 app = Flask(__name__)
-engine = create_engine('sqlite:///category.db',
-                       connect_args={'check_same_thread': False},
-                       poolclass=StaticPool)
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
 
 
 # Create anti-forgery state token
@@ -78,7 +69,7 @@ def gconnect():
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
             json.dumps("Token's client ID does not match app's."), 401)
-        print "Token's client ID does not match app's."
+        print("Token's client ID does not match app's.")
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -122,15 +113,15 @@ def gdisconnect():
     if access_token is None:
         login_session.clear()
         return redirect(url_for('allCategories'))
-    print 'In gdisconnect access token is %s', access_token
-    print 'User name is: '
-    print login_session['username']
+    print('In gdisconnect access token is %s', access_token)
+    print('User name is: ')
+    print(login_session['username'])
     url = 'https://accounts.google.com/o/oauth2/revoke'
     '?token=%s' % login_session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
-    print 'result is '
-    print result
+    print('result is ')
+    print(result)
     if result['status'] == '200':
         del login_session['access_token']
         del login_session['gplus_id']
@@ -149,22 +140,21 @@ def gdisconnect():
 
 
 def createUser(login_session):
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
+    crud.createUser(name=login_session['username'],
+                    email=login_session['email'],
+                    picture=login_session['picture'])
+    user = crud.findUserEmail(login_session['email'])
     return user.id
 
 
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
+    user = crud.findUserId(user_id)
     return user
 
 
 def getUserID(email):
     try:
-        user = session.query(User).filter_by(email=email).one()
+        user = crud.findUserEmail(email)
         return user.id
     except:
         return None
@@ -172,24 +162,34 @@ def getUserID(email):
 
 @app.route('/category/<string:category_name>/json')
 def menuItemJson(category_name):
-    category = session.query(Category).filter_by(name=category_name).one()
-    items = session.query(CategoryItem).filter_by(category_id=category.id)
+    category = crud.findCategoryName(category_name)
+    items = crud.findItemsCategoryID(category.id)
     return jsonify(Items=[i.serialize for i in items])
 
 
 @app.route('/')
 def allCategories():
-    categories = session.query(Category).all()
-    items = session.query(CategoryItem).order_by(CategoryItem.id.desc())
+    categories = crud.findAllCategory()
+    items = crud.findAllCategoryItems()
     return render_template('allcategories.html',
                            categories=categories, items=items)
 
 
 @app.route('/category/<string:category_name>')
 def menu(category_name):
-    category = session.query(Category).filter_by(name=category_name).one()
-    items = session.query(CategoryItem).filter_by(category_id=category.id)
+    category = crud.findCategoryName(category_name)
+    items = crud.findItemsCategoryID(category.id)
     return render_template('menu.html', category=category, items=items)
+
+
+@app.route('/category/<string:category_name>/<string:category_item_name>')
+def menuCategoryItem(category_name, category_item_name):
+    category = crud.findCategoryName(category_name)
+    item = crud.findItemCategoryItem(category.id, category_item_name)
+    return render_template('categoryitem.html',
+                           category_name=category_name,
+                           category_item_name=category_item_name,
+                           item=item)
 
 
 @app.route('/categoryItem/<string:category_name>/new', methods=['GET', 'POST'])
@@ -197,13 +197,9 @@ def newCategoryItem(category_name):
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
-        category = session.query(Category).filter_by(name=category_name).one()
-        newCategoryItem = CategoryItem(name=request.form['name'],
-                                       description=request.form['description'],
-                                       category_id=category.id,
-                                       user_id=login_session['user_id'])
-        session.add(newCategoryItem)
-        session.commit()
+        category = crud.findCategoryName(category_name)
+        crud.addCategoryItem(request.form['name'], request.form['description'],
+                             category.id, login_session['user_id'])
         return redirect(url_for('menu', category_name=category_name))
     else:
         return render_template('newcategoryitem.html',
@@ -215,17 +211,13 @@ def newCategoryItem(category_name):
 def editCategoryItem(category_name, category_item_name):
     if 'username' not in login_session:
         return redirect('/login')
-    category = session.query(Category).filter_by(name=category_name).one()
-    categoryItem = session.query(CategoryItem).filter_by(
-        category_id=category.id,
-        name=category_item_name).one()
+    category = crud.findCategoryName(category_name)
+    categoryItem = crud.findItemCategoryItem(category.id, category_item_name)
     if categoryItem.user_id != login_session['user_id']:
         return "<script>function myFunction() {alert('You are not authorized!')}</script><body onload='myFunction()'>"  # noqa
     if request.method == 'POST':
-        categoryItem.name = request.form['name']
-        categoryItem.description = request.form['description']
-        session.add(categoryItem)
-        session.commit()
+        crud.editCategoryItem(categoryItem, request.form['name'],
+                              request.form['description'])
         return redirect(url_for('menu', category_name=category_name))
     else:
         return render_template('editcategoryitem.html',
@@ -239,16 +231,13 @@ def editCategoryItem(category_name, category_item_name):
 def deleteCategoryItem(category_name, category_item_name):
     if 'username' not in login_session:
         return redirect('/login')
-    category = session.query(Category).filter_by(name=category_name).one()
-    categoryItem = session.query(CategoryItem).filter_by(
-        category_id=category.id,
-        name=category_item_name).one()
+    category = crud.findCategoryName(category_name)
+    categoryItem = crud.findItemCategoryItem(category.id, category_item_name)
     if categoryItem.user_id != login_session['user_id']:
         return "<script>function myFunction() {alert('You are not authorized!')}</script><body onload='myFunction()'>"  # noqa
     if request.method == 'POST':
         print(category_item_name)
-        session.delete(categoryItem)
-        session.commit()
+        crud.deleteCategoryItem(categoryItem)
         return redirect(url_for('menu', category_name=category_name))
     else:
         return render_template('deletecategoryitem.html',

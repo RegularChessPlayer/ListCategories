@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <link rel=stylesheet type=text/css href="{{url_for('static', filename='styles.css')}}">
+    </head>
+    <body>   
+        <h1>{{ category_name }} </h1>
+        </br>
+        <h2>{{ category_item_name }}</h2>
+        {{ item.name }}
+        ({{ item.description }})
+        <a href={{url_for('menu', category_name=category_name)}}>Back</a>
+    </body>
+</html>

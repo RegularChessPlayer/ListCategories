@@ -11,8 +11,10 @@
         <h2>Items</h2>
         <ul>
         {% for i in items %}
+        </br>
         <li>
-        {{i.name}}
+        <a href="{{url_for('menuCategoryItem', category_name=i.category.name,
+                            category_item_name=i.name)}}">{{i.name}}</a>,
         ({{i.description}})
         </li>
         </ul>
