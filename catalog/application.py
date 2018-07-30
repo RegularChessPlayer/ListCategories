@@ -174,6 +174,14 @@ def menuItemJson(category_name):
     return jsonify(Items=[i.serialize for i in items])
 
 
+# JSON APIs to show especific Catalog Item information
+@app.route('/category/<string:category_name>/<string:category_item_name>/json')
+def menuEspecificItemJson(category_name, category_item_name):
+    category = crud.findCategoryName(category_name)
+    item = crud.findItemCategoryItem(category.id, category_item_name)
+    return jsonify(Item=item.serialize)
+
+
 # READ - home page, show latest items and categories
 @app.route('/')
 def allCategories():
